@@ -2,10 +2,10 @@ use crate::event::{AppEvent, Event, EventHandler, TIMER_TICK};
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
-    layout::{Alignment, Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Layout},
     style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Paragraph},
 };
 use std::{io, time::Duration};
 
@@ -22,6 +22,12 @@ pub struct Clock {
     player2: Duration,
     turn: ClockTurn,
     increment: Duration,
+}
+
+impl Clock {
+    pub fn burning(time: Duration) -> bool {
+        time < Duration::from_secs(21)
+    }
 }
 
 impl Default for Clock {
@@ -106,45 +112,61 @@ impl App {
             .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(frame.area());
 
+        let l2 = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Fill(1),
+                Constraint::Max(3),
+                Constraint::Fill(1),
+            ])
+            .split(layout[0]);
+        let l3 = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Fill(1),
+                Constraint::Max(3),
+                Constraint::Fill(1),
+            ])
+            .split(layout[1]);
         let title = Line::from(" Chess clock ".bold());
         let instructions = Line::from(vec![
-            " Press <space> to start ".green().into(),
-            " Quit ".into(),
+            " Press <space> to start "
+                .fg(Color::LightGreen)
+                .bold()
+                .into(),
+            " Quit ".bold().into(),
             "<Q> ".blue().bold(),
         ]);
         let block = Block::default()
             .title(title.centered())
             .title_bottom(instructions.centered());
+        let active_style = Style::default().bold().fg(Color::LightGreen);
+        let inactive_style = Style::default().bold().fg(Color::from_u32(0x007a7a7a));
+        let burning_clock_style = Style::default().bold().fg(Color::LightRed);
         let styles = match self.clock.turn {
-            ClockTurn::NotStarted => vec![Style::default(), Style::default()],
+            ClockTurn::NotStarted => vec![inactive_style, inactive_style],
             ClockTurn::Player1 => vec![
-                Style::default().fg(Color::Black).bg(Color::White),
-                Style::default(),
+                if Clock::burning(self.clock.player1) {
+                    burning_clock_style
+                } else {
+                    active_style
+                },
+                inactive_style,
             ],
             ClockTurn::Player2 => vec![
-                Style::default(),
-                Style::default().fg(Color::Black).bg(Color::White),
+                inactive_style,
+                if Clock::burning(self.clock.player2) {
+                    burning_clock_style
+                } else {
+                    active_style
+                },
             ],
         };
 
         let p1 = Span::styled(format!("{}", show_time(self.clock.player1)), styles[0]);
         let p2 = Span::styled(format!("{}", show_time(self.clock.player2)), styles[1]);
-        frame.render_widget(
-            Paragraph::new(p1).centered().block(
-                Block::new()
-                    .borders(Borders::ALL)
-                    .title(Line::from(" PLAYER1 ").centered()),
-            ),
-            layout[0],
-        );
-        frame.render_widget(
-            Paragraph::new(p2).centered().block(
-                Block::new()
-                    .borders(Borders::ALL)
-                    .title(Line::from(" PLAYER2 ").centered()),
-            ),
-            layout[1],
-        );
+        frame.render_widget(Paragraph::new(p1).centered().block(Block::new()), l2[1]);
+        frame.render_widget(Paragraph::new(p2).centered().block(Block::new()), l3[1]);
         frame.render_widget(block, frame.area());
     }
 
