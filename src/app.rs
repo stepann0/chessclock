@@ -1,11 +1,12 @@
 use crate::event::{AppEvent, Event, EventHandler, TIMER_TICK};
+use crate::tabs::TimeCtrl;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
-    layout::{Constraint, Direction, Layout},
+    layout::{Constraint, Direction, Flex, Layout, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Span},
-    widgets::{Block, Paragraph},
+    widgets::{Block, Paragraph, Widget},
 };
 use std::{io, time::Duration};
 
@@ -22,6 +23,7 @@ pub struct Clock {
     player2: Duration,
     turn: ClockTurn,
     increment: Duration,
+    time_ctrl: (Duration, Duration),
 }
 
 impl Clock {
@@ -37,32 +39,43 @@ impl Default for Clock {
             player1: Duration::from_secs(40),
             player2: Duration::from_secs(65),
             turn: ClockTurn::NotStarted,
+            time_ctrl: (Duration::from_secs(180), Duration::from_secs(2)),
         }
     }
 }
 
+#[derive(Debug, PartialEq)]
+pub enum Screen {
+    Main,
+    PickTimeCtrl(TimeCtrl),
+    TimeOut,
+}
+
 #[derive(Debug)]
 pub struct App {
+    pub screen: Screen,
     pub timeout: bool,
     pub running: bool,
     /// Event handler.
     pub events: EventHandler,
     pub clock: Clock,
+    // pub time_ctrl_picker: SelectedTab,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
+            screen: Screen::PickTimeCtrl(TimeCtrl::default()),
             timeout: false,
             clock: Clock::default(),
             running: true,
             events: EventHandler::new(),
+            // time_ctrl_picker: SelectedTab::default(),
         }
     }
 }
 
 impl App {
-    /// Constructs a new instance of [`App`].
     pub fn new() -> Self {
         Self::default()
     }
@@ -90,14 +103,20 @@ impl App {
         Ok(())
     }
 
-    /// Handles the key events and updates the state of [`App`].
     pub fn handle_key_events(&mut self, key_event: KeyEvent) -> io::Result<()> {
+        match &mut self.screen {
+            Screen::Main => todo!(),
+            Screen::PickTimeCtrl(s) => s.handle_key_events(key_event),
+            Screen::TimeOut => todo!(),
+        }
         match key_event.code {
             KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
             KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
             }
-            KeyCode::Char(' ') => self.hit_clock(),
+            KeyCode::Char(' ') => {
+                // panic!("from handle_key_events: {}", self.);
+            }
             _ => {}
         }
         Ok(())
@@ -106,7 +125,9 @@ impl App {
     // Handles the tick event of the terminal.
     pub fn tick(&self) {}
 
-    pub fn ui(&self, frame: &mut Frame) {
+    pub fn ui(&mut self, frame: &mut Frame) {
+        self.pick_time_ctrl(frame);
+        return;
         let layout = Layout::default()
             .direction(Direction::Horizontal)
             .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
@@ -140,7 +161,7 @@ impl App {
         let block = Block::default()
             .title(title.centered())
             .title_bottom(instructions.centered());
-        let active_style = Style::default().bold().fg(Color::LightGreen);
+        let active_style = Style::default().bold().fg(Color::LightGreen); // TODO: make it a separate Style along with LightGray Style  below
         let inactive_style = Style::default().bold().fg(Color::from_u32(0x007a7a7a));
         let burning_clock_style = Style::default().bold().fg(Color::LightRed);
         let styles = match self.clock.turn {
@@ -170,7 +191,25 @@ impl App {
         frame.render_widget(block, frame.area());
     }
 
-    /// Set running to false to quit the application.
+    pub fn pick_time_ctrl(&mut self, frame: &mut Frame) {
+        let center = self.popup_area(frame.area(), 50, 3);
+        // self.time_ctrl_picker.render(center, frame.buffer_mut());
+        match &mut self.screen {
+            Screen::PickTimeCtrl(s) => s.render(center, frame.buffer_mut()),
+            Screen::Main => unreachable!(),
+            Screen::TimeOut => unreachable!(),
+        }
+    }
+
+    // helper function to create a centered rect using up certain percentage of the available rect `r`
+    fn popup_area(&self, area: Rect, percent_x: u16, height: u16) -> Rect {
+        let vertical = Layout::vertical([Constraint::Length(height)]).flex(Flex::Center);
+        let horizontal = Layout::horizontal([Constraint::Percentage(percent_x)]).flex(Flex::Center);
+        let [area] = vertical.areas(area);
+        let [area] = horizontal.areas(area);
+        area
+    }
+
     pub fn quit(&mut self) {
         self.running = false;
     }
