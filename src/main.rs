@@ -3,6 +3,7 @@ use std::io;
 use crate::app::App;
 
 pub mod app;
+pub mod clock;
 pub mod event;
 pub mod tabs;
 

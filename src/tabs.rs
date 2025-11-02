@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     buffer::Buffer,
@@ -8,6 +10,8 @@ use ratatui::{
     widgets::{Block, Padding, Tabs, Widget},
 };
 use strum::{Display, EnumIter, FromRepr, IntoEnumIterator};
+
+pub type CtrlOption = (Duration, Duration);
 
 #[derive(Debug, PartialEq, Default, Clone, Copy, Display, FromRepr, EnumIter)]
 pub enum TimeCtrl {
@@ -23,14 +27,12 @@ pub enum TimeCtrl {
 }
 
 impl TimeCtrl {
-    /// Get the previous tab, if there is no previous tab return the current tab.
     pub fn previous(&mut self) {
         let current_index: usize = *self as usize;
         let previous_index = current_index.saturating_sub(1);
         *self = Self::from_repr(previous_index).unwrap_or(*self);
     }
 
-    /// Get the next tab, if there is no next tab return the current tab.
     pub fn next(&mut self) {
         let current_index = *self as usize;
         let next_index = current_index.saturating_add(1);
@@ -43,6 +45,15 @@ impl TimeCtrl {
             KeyCode::Left => self.previous(),
             // KeyCode::Enter => self.app,
             _ => {}
+        }
+    }
+
+    pub fn to_duration(&self) -> CtrlOption {
+        match self {
+            TimeCtrl::Tab1 => (Duration::from_secs(180), Duration::from_secs(2)),
+            TimeCtrl::Tab2 => (Duration::from_secs(60), Duration::from_secs(0)),
+            TimeCtrl::Tab3 => (Duration::from_secs(300), Duration::from_secs(2)),
+            TimeCtrl::Tab4 => (Duration::from_secs(600), Duration::from_secs(0)),
         }
     }
 }
