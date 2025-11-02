@@ -52,7 +52,7 @@ impl TimeCtrl {
         match self {
             TimeCtrl::Tab1 => (Duration::from_secs(180), Duration::from_secs(2)),
             TimeCtrl::Tab2 => (Duration::from_secs(60), Duration::from_secs(0)),
-            TimeCtrl::Tab3 => (Duration::from_secs(300), Duration::from_secs(2)),
+            TimeCtrl::Tab3 => (Duration::from_secs(300), Duration::from_secs(3)),
             TimeCtrl::Tab4 => (Duration::from_secs(600), Duration::from_secs(0)),
         }
     }
@@ -63,7 +63,7 @@ impl Widget for TimeCtrl {
         use Constraint::{Fill, Length, Min};
         let vertical = Layout::vertical([Length(1), Min(0)]);
         let [_, tabs_area] = vertical.areas(area);
-        let horizontal = Layout::horizontal([Fill(1), Min(0), Fill(1)]);
+        let horizontal = Layout::horizontal([Fill(1), Min(27), Fill(1)]);
         let [_, tabs_area, _] = horizontal.areas(tabs_area);
 
         let titles = TimeCtrl::iter().map(TimeCtrl::title);

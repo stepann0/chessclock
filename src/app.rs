@@ -66,7 +66,9 @@ impl App {
                     _ => {}
                 },
                 Event::App(app_event) => match app_event {
-                    AppEvent::Timeout => self.quit(),
+                    AppEvent::Timeout => {
+                        self.screen = Screen::PickTimeCtrl;
+                    }
                     AppEvent::HitClock => self.hit_clock(),
                     AppEvent::Quit => self.quit(),
                 },
@@ -120,7 +122,7 @@ impl App {
     }
 
     pub fn pick_time_ctrl(&mut self, frame: &mut Frame) {
-        let center = self.popup_area(frame.area(), 50, 3);
+        let center = self.popup_area(frame.area(), 40, 3);
         self.time_ctrl_picker.render(center, frame.buffer_mut());
     }
 

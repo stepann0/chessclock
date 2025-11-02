@@ -110,18 +110,14 @@ impl Widget for Clock {
                 Constraint::Fill(1),
             ])
             .split(layout[1]);
-        let title = Line::from(" Chess clock ".bold());
-        let instructions = Line::from(vec![
-            " Press <space> to start "
-                .fg(Color::LightGreen)
-                .bold()
-                .into(),
-            // " Quit ".bold().into(),
-            // "<Q> ".blue().bold(),
-        ]);
-        let block = Block::default()
-            .title(title.centered())
-            .title_bottom(instructions.centered());
+        let instructions = Line::from(vec![if matches!(self.turn, ClockTurn::NotStarted) {
+            " Hit <space> to start ".fg(Color::LightGreen).bold().into()
+        } else {
+            // Do not show anything when clock has started
+            "".into()
+        }]);
+        let block = Block::default().title_bottom(instructions.centered());
+
         let active_style = Style::default().bold().fg(Color::LightGreen); // TODO: make it a separate Style along with LightGray Style  below
         let inactive_style = Style::default().bold().fg(Color::from_u32(0x007a7a7a));
         let burning_clock_style = Style::default().bold().fg(Color::LightRed);
