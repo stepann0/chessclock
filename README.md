@@ -2,4 +2,4 @@
 - made with Ratatui
 - just for learning and having fun
 
-![clocks](./screenshots/chessclock.png)
+![clocks](./screenshots/chessclock.gif)
