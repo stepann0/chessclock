@@ -67,6 +67,7 @@ impl App {
                 },
                 Event::App(app_event) => match app_event {
                     AppEvent::Timeout => {
+                        self.clock = Clock::default();
                         self.screen = Screen::PickTimeCtrl;
                     }
                     AppEvent::HitClock => self.hit_clock(),
@@ -96,7 +97,7 @@ impl App {
             },
             Screen::PickTimeCtrl => match key_event.code {
                 KeyCode::Char(' ') | KeyCode::Enter => {
-                    self.clock.set(self.time_ctrl_picker.to_duration());
+                    self.clock.set(self.time_ctrl_picker);
                     self.screen = Screen::Clocks;
                 }
                 _ => self.time_ctrl_picker.handle_key_events(key_event),

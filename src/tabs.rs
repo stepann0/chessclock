@@ -16,7 +16,7 @@ pub type CtrlOption = (Duration, Duration);
 #[derive(Debug, PartialEq, Default, Clone, Copy, Display, FromRepr, EnumIter)]
 pub enum TimeCtrl {
     #[default]
-    #[strum(to_string = "20s +1")]
+    #[strum(to_string = "25s +0")]
     Tab0,
     #[strum(to_string = "3 +2")]
     Tab1,
@@ -52,7 +52,7 @@ impl TimeCtrl {
 
     pub fn to_duration(&self) -> CtrlOption {
         match self {
-            TimeCtrl::Tab0 => (Duration::from_secs(20), Duration::from_secs(1)),
+            TimeCtrl::Tab0 => (Duration::from_secs(25), Duration::from_secs(0)),
             TimeCtrl::Tab1 => (Duration::from_secs(180), Duration::from_secs(2)),
             TimeCtrl::Tab2 => (Duration::from_secs(60), Duration::from_secs(0)),
             TimeCtrl::Tab3 => (Duration::from_secs(300), Duration::from_secs(3)),
