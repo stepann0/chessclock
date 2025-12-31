@@ -45,7 +45,6 @@ impl TimeCtrl {
         match key.code {
             KeyCode::Right => self.next(),
             KeyCode::Left => self.previous(),
-            // KeyCode::Enter => self.app,
             _ => {}
         }
     }
@@ -82,16 +81,9 @@ impl Widget for TimeCtrl {
 }
 
 impl TimeCtrl {
-    /// Return tab's name as a styled `Line`
     pub fn title(self) -> Line<'static> {
-        format!(" {self} ").fg(tailwind::SLATE.c200).into()
+        format!(" {self} ").fg(Color::White).into()
     }
-
-    // fn render_tab0(self, area: Rect, buf: &mut Buffer) {
-    //     Paragraph::new("Hello, World!")
-    //         .block(self.block())
-    //         .render(area, buf);
-    // }
 
     /// A block surrounding the tab's content
     fn block(self) -> Block<'static> {
@@ -101,13 +93,4 @@ impl TimeCtrl {
             .border_style(Color::LightGreen)
             .title(Line::from(" Choose time control ").centered())
     }
-
-    // pub const fn palette(self) -> tailwind::Palette {
-    //     match self {
-    //         Self::Tab1 => tailwind::BLUE,
-    //         Self::Tab2 => tailwind::EMERALD,
-    //         Self::Tab3 => tailwind::INDIGO,
-    //         Self::Tab4 => tailwind::RED,
-    //     }
-    // }
 }

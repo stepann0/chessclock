@@ -1,12 +1,13 @@
 [package]
 name = "chessclock"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 
 [dependencies]
-crossterm = { version = "0.28.1", features = ["event-stream"] }
+crossterm = { version = "0.29.0", features = ["event-stream"] }
 futures = "0.3.31"
-ratatui = "0.29.0"
+ratatui = "0.30.0"
+anyhow = "1.0"
 strum = { version = "0.27.2", features = ["derive"] }
 tokio = { version = "1.48.0", features = ["full"] }
 

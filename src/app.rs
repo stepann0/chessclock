@@ -1,9 +1,6 @@
 use crate::clock::Clock;
 use crate::event::{AppEvent, Event, EventHandler};
 use crate::tabs::TimeCtrl;
-use ratatui::style::{Color, Style, Stylize};
-use ratatui::text::Text;
-use ratatui::widgets::Paragraph;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
@@ -49,7 +46,7 @@ impl App {
     }
 
     /// Run the application's main loop.
-    pub async fn run(mut self, mut terminal: DefaultTerminal) -> io::Result<()> {
+    pub async fn run(mut self, mut terminal: DefaultTerminal) -> anyhow::Result<()> {
         while self.running {
             terminal.draw(|frame| self.ui(frame))?;
             match self.events.next().await? {
@@ -101,10 +98,9 @@ impl App {
             },
             Screen::TimeOut => match key_event.code {
                 KeyCode::Char('R') | KeyCode::Char('r') | KeyCode::Char(' ') => {
-                    // self.clock.set(self.time_ctrl_picker);
                     self.screen = Screen::PickTimeCtrl;
                 }
-                _ => self.time_ctrl_picker.handle_key_events(key_event),
+                _ => {}
             },
         }
         Ok(())
@@ -115,33 +111,24 @@ impl App {
 
     pub fn ui(&mut self, frame: &mut Frame) {
         match self.screen {
-            Screen::Clocks => self.clocks(frame),
-            Screen::PickTimeCtrl => self.pick_time_ctrl(frame),
-            Screen::TimeOut => self.time_out(frame),
+            Screen::Clocks => self.render_clocks(frame),
+            Screen::PickTimeCtrl => self.render_pick_time_ctrl(frame),
+            Screen::TimeOut => self.render_time_out(frame),
         }
     }
 
-    pub fn clocks(&mut self, frame: &mut Frame) {
+    pub fn render_clocks(&mut self, frame: &mut Frame) {
         self.clock.render(frame.area(), frame.buffer_mut());
     }
 
-    pub fn pick_time_ctrl(&mut self, frame: &mut Frame) {
+    pub fn render_pick_time_ctrl(&mut self, frame: &mut Frame) {
         let center = self.popup_area(frame.area(), 40, 3);
         self.time_ctrl_picker.render(center, frame.buffer_mut());
     }
 
-    pub fn time_out(&mut self, frame: &mut Frame) {
-        let center = self.popup_area(frame.area(), 20, 5);
-        let (is_time_out, player) = self.clock.is_time_out_player();
-        assert!(is_time_out && player != 0);
-
-        let p = Text::styled(
-            format!(" PLAYER {player} GOT FLAGGED "),
-            Style::default().bold().bg(Color::Red),
-        );
-        Paragraph::new(p)
-            .centered()
-            .render(center, frame.buffer_mut());
+    pub fn render_time_out(&mut self, frame: &mut Frame) {
+        self.render_clocks(frame);
+        self.clock.render_time_out(frame.area(), frame.buffer_mut());
     }
 
     // helper function to create a centered rect using up certain percentage of the available rect `r`

@@ -1,4 +1,4 @@
-use std::io;
+use anyhow::Result;
 
 use crate::app::App;
 
@@ -8,7 +8,7 @@ mod event;
 mod tabs;
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> Result<()> {
     let terminal = ratatui::init();
     let result = App::new().run(terminal).await;
     ratatui::restore();

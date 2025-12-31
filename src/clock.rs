@@ -2,7 +2,7 @@ use std::{fmt::Display, time::Duration};
 
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Flex, Layout, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Text},
     widgets::{Block, Paragraph, Widget},
@@ -119,14 +119,12 @@ impl Clock {
     pub fn tick_timer(&mut self) {
         let millisec = Duration::from_millis(TIMER_TICK);
         match self.turn {
-            ClockTurn::NotStarted => return,
+            ClockTurn::NotStarted => (),
             ClockTurn::Player1 => {
                 self.player1.0 = self.player1.0.saturating_sub(millisec);
-                return;
             }
             ClockTurn::Player2 => {
                 self.player2.0 = self.player2.0.saturating_sub(millisec);
-                return;
             }
         }
     }
@@ -147,6 +145,25 @@ impl Clock {
         } else {
             false
         }
+    }
+
+    pub fn render_time_out(self, area: Rect, buf: &mut Buffer) {
+        let (is_time_out, player) = self.is_time_out_player();
+        if !is_time_out {
+            return;
+        }
+
+        let vertical = Layout::vertical([Constraint::Length(10)]).flex(Flex::Center);
+        let horizontal = Layout::horizontal([Constraint::Percentage(25)]).flex(Flex::Center);
+        let [area] = vertical.areas(area);
+        let [area] = horizontal.areas(area);
+
+        let p = Text::styled(
+            format!(" PLAYER {player} LOST ON TIME        \n Hit <space> to pick time control "),
+            Style::default().bold().fg(Color::LightRed),
+        );
+
+        Paragraph::new(p).render(area, buf);
     }
 }
 
@@ -172,16 +189,16 @@ impl Widget for Clock {
         let l2 = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
-                Constraint::Fill(1),
-                Constraint::Min(9),
+                Constraint::Fill(3),
+                Constraint::Min(10),
                 Constraint::Fill(1),
             ])
             .split(layout[0]);
         let l3 = Layout::default()
             .direction(Direction::Vertical)
             .constraints(vec![
-                Constraint::Fill(1),
-                Constraint::Min(9),
+                Constraint::Fill(3),
+                Constraint::Min(10),
                 Constraint::Fill(1),
             ])
             .split(layout[1]);
