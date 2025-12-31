@@ -2,7 +2,7 @@ use std::{fmt::Display, time::Duration};
 
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Flex, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style, Stylize},
     text::{Line, Text},
     widgets::{Block, Paragraph, Widget},
@@ -100,6 +100,7 @@ impl Clock {
         self.player1.0 = ctrl.to_duration().0;
         self.player2.0 = ctrl.to_duration().0;
         self.increment = ctrl.to_duration().1;
+        self.turn = ClockTurn::NotStarted;
     }
 
     pub fn hit(&mut self) {
@@ -153,17 +154,28 @@ impl Clock {
             return;
         }
 
-        let vertical = Layout::vertical([Constraint::Length(10)]).flex(Flex::Center);
-        let horizontal = Layout::horizontal([Constraint::Percentage(25)]).flex(Flex::Center);
-        let [area] = vertical.areas(area);
-        let [area] = horizontal.areas(area);
+        let layout = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(vec![
+                Constraint::Fill(1),
+                Constraint::Length(33),
+                Constraint::Fill(1),
+            ])
+            .split(area);
 
+        let l = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![
+                Constraint::Fill(3),
+                Constraint::Min(10),
+                Constraint::Fill(1),
+            ])
+            .split(layout[1]);
         let p = Text::styled(
-            format!(" PLAYER {player} LOST ON TIME        \n Hit <space> to pick time control "),
-            Style::default().bold().fg(Color::LightRed),
+            format!("PLAYER {player} LOST ON TIME\nHit <space> to continue "),
+            Style::default().bold().fg(Color::LightGreen),
         );
-
-        Paragraph::new(p).render(area, buf);
+        Paragraph::new(p).render(l[1], buf);
     }
 }
 
