@@ -2,10 +2,10 @@ use std::io;
 
 use crate::app::App;
 
-pub mod app;
-pub mod clock;
-pub mod event;
-pub mod tabs;
+mod app;
+mod clock;
+mod event;
+mod tabs;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {

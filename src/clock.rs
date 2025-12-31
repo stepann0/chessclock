@@ -31,7 +31,7 @@ macro_rules! font {
 }
 
 #[derive(Debug, Clone, Copy)]
-struct Time(Duration);
+pub struct Time(pub Duration);
 
 impl Time {
     fn with_font(&self) -> String {
@@ -44,8 +44,11 @@ impl Time {
 
         for i in 0..letter_height {
             for n in &split_vec {
-                line.push(n[i]);
-                line.push(" ");
+                // skip empty str
+                if n[i].len() > 0 {
+                    line.push(n[i]);
+                    line.push(" ");
+                }
             }
             line.push("\n");
         }
@@ -80,11 +83,11 @@ pub enum ClockTurn {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Clock {
-    player1: Time,
-    player2: Time,
-    turn: ClockTurn,
-    increment: Duration,
-    time_ctrl: TimeCtrl,
+    pub player1: Time,
+    pub player2: Time,
+    pub turn: ClockTurn,
+    pub increment: Duration,
+    pub time_ctrl: TimeCtrl,
 }
 
 impl Clock {
@@ -128,11 +131,22 @@ impl Clock {
         }
     }
 
+    pub fn is_time_out_player(&self) -> (bool, usize) {
+        if self.player1.0 == Duration::ZERO {
+            (true, 1)
+        } else if self.player2.0 == Duration::ZERO {
+            (true, 2)
+        } else {
+            (false, 0)
+        }
+    }
+
     pub fn is_time_out(&self) -> bool {
         if self.player1.0 == Duration::ZERO || self.player2.0 == Duration::ZERO {
-            return true;
+            true
+        } else {
+            false
         }
-        false
     }
 }
 
@@ -159,7 +173,7 @@ impl Widget for Clock {
             .direction(Direction::Vertical)
             .constraints(vec![
                 Constraint::Fill(1),
-                Constraint::Min(10),
+                Constraint::Min(9),
                 Constraint::Fill(1),
             ])
             .split(layout[0]);
@@ -167,7 +181,7 @@ impl Widget for Clock {
             .direction(Direction::Vertical)
             .constraints(vec![
                 Constraint::Fill(1),
-                Constraint::Min(10),
+                Constraint::Min(9),
                 Constraint::Fill(1),
             ])
             .split(layout[1]);
@@ -206,8 +220,8 @@ impl Widget for Clock {
             ],
         };
 
-        let p1 = Text::styled(format!("{}", self.player1.with_font()), styles[0]);
-        let p2 = Text::styled(format!("{}", self.player2.with_font()), styles[1]);
+        let p1 = Text::styled(self.player1.with_font(), styles[0]);
+        let p2 = Text::styled(self.player2.with_font(), styles[1]);
         Paragraph::new(p1).centered().render(l2[1], buf);
         Paragraph::new(p2).centered().render(l3[1], buf);
         block.render(area, buf);

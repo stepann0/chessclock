@@ -94,8 +94,7 @@ impl EventTask {
             let clock_tick_delay = clock_tick.tick();
             let tick_delay = tick.tick();
             let crossterm_event = reader.next().fuse();
-            tokio::select! {
-              _ = self.sender.closed() => {
+            tokio::select! { _ = self.sender.closed() => {
                 break;
               }
               _ = tick_delay => {

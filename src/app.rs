@@ -1,6 +1,9 @@
 use crate::clock::Clock;
 use crate::event::{AppEvent, Event, EventHandler};
 use crate::tabs::TimeCtrl;
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::text::Text;
+use ratatui::widgets::Paragraph;
 use ratatui::{
     DefaultTerminal, Frame,
     crossterm::event::{KeyCode, KeyEvent, KeyModifiers},
@@ -20,7 +23,6 @@ pub enum Screen {
 pub struct App {
     // Event handler.
     pub events: EventHandler,
-    pub timeout: bool,
     pub running: bool,
 
     // Multi-screen logic goes here
@@ -32,7 +34,6 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            timeout: false,
             clock: Clock::default(),
             running: true,
             events: EventHandler::new(),
@@ -54,7 +55,7 @@ impl App {
             match self.events.next().await? {
                 Event::Tick => self.tick(),
                 Event::TimerTick => {
-                    if self.clock.is_time_out() {
+                    if self.clock.is_time_out() && self.screen == Screen::Clocks {
                         self.events.send(AppEvent::Timeout);
                     }
                     self.clock.tick_timer();
@@ -66,10 +67,7 @@ impl App {
                     _ => {}
                 },
                 Event::App(app_event) => match app_event {
-                    AppEvent::Timeout => {
-                        self.clock = Clock::default();
-                        self.screen = Screen::PickTimeCtrl;
-                    }
+                    AppEvent::Timeout => self.screen = Screen::TimeOut,
                     AppEvent::HitClock => self.hit_clock(),
                     AppEvent::Quit => self.quit(),
                 },
@@ -92,7 +90,6 @@ impl App {
                 KeyCode::Char(' ') => {
                     self.events.send(AppEvent::HitClock);
                 }
-
                 _ => {}
             },
             Screen::PickTimeCtrl => match key_event.code {
@@ -102,7 +99,13 @@ impl App {
                 }
                 _ => self.time_ctrl_picker.handle_key_events(key_event),
             },
-            Screen::TimeOut => todo!(),
+            Screen::TimeOut => match key_event.code {
+                KeyCode::Char('R') | KeyCode::Char('r') | KeyCode::Char(' ') => {
+                    // self.clock.set(self.time_ctrl_picker);
+                    self.screen = Screen::PickTimeCtrl;
+                }
+                _ => self.time_ctrl_picker.handle_key_events(key_event),
+            },
         }
         Ok(())
     }
@@ -114,7 +117,7 @@ impl App {
         match self.screen {
             Screen::Clocks => self.clocks(frame),
             Screen::PickTimeCtrl => self.pick_time_ctrl(frame),
-            Screen::TimeOut => todo!(),
+            Screen::TimeOut => self.time_out(frame),
         }
     }
 
@@ -125,6 +128,20 @@ impl App {
     pub fn pick_time_ctrl(&mut self, frame: &mut Frame) {
         let center = self.popup_area(frame.area(), 40, 3);
         self.time_ctrl_picker.render(center, frame.buffer_mut());
+    }
+
+    pub fn time_out(&mut self, frame: &mut Frame) {
+        let center = self.popup_area(frame.area(), 20, 5);
+        let (is_time_out, player) = self.clock.is_time_out_player();
+        assert!(is_time_out && player != 0);
+
+        let p = Text::styled(
+            format!(" PLAYER {player} GOT FLAGGED "),
+            Style::default().bold().bg(Color::Red),
+        );
+        Paragraph::new(p)
+            .centered()
+            .render(center, frame.buffer_mut());
     }
 
     // helper function to create a centered rect using up certain percentage of the available rect `r`
