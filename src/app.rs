@@ -83,13 +83,13 @@ impl App {
 
         match self.screen {
             Screen::Clocks => match key_event.code {
-                KeyCode::Esc | KeyCode::Char('q') => self.events.send(AppEvent::Quit),
                 KeyCode::Char(' ') => {
                     self.events.send(AppEvent::HitClock);
                 }
                 _ => {}
             },
             Screen::PickTimeCtrl => match key_event.code {
+                KeyCode::Char('q') => self.events.send(AppEvent::Quit),
                 KeyCode::Char(' ') | KeyCode::Enter => {
                     self.clock.set(self.time_ctrl_picker);
                     self.screen = Screen::Clocks;
@@ -97,9 +97,10 @@ impl App {
                 _ => self.time_ctrl_picker.handle_key_events(key_event),
             },
             Screen::TimeOut => match key_event.code {
-                KeyCode::Char('R') | KeyCode::Char('r') | KeyCode::Char(' ') => {
+                KeyCode::Char('R') | KeyCode::Char('r') | KeyCode::Enter => {
                     self.screen = Screen::PickTimeCtrl;
                 }
+                KeyCode::Char('q') => self.events.send(AppEvent::Quit),
                 _ => {}
             },
         }
@@ -128,7 +129,6 @@ impl App {
 
     pub fn render_time_out(&mut self, frame: &mut Frame) {
         self.render_clocks(frame);
-        self.clock.render_time_out(frame.area(), frame.buffer_mut());
     }
 
     // helper function to create a centered rect using up certain percentage of the available rect `r`

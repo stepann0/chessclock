@@ -130,52 +130,12 @@ impl Clock {
         }
     }
 
-    pub fn is_time_out_player(&self) -> (bool, usize) {
-        if self.player1.0 == Duration::ZERO {
-            (true, 1)
-        } else if self.player2.0 == Duration::ZERO {
-            (true, 2)
-        } else {
-            (false, 0)
-        }
-    }
-
     pub fn is_time_out(&self) -> bool {
         if self.player1.0 == Duration::ZERO || self.player2.0 == Duration::ZERO {
             true
         } else {
             false
         }
-    }
-
-    pub fn render_time_out(self, area: Rect, buf: &mut Buffer) {
-        let (is_time_out, player) = self.is_time_out_player();
-        if !is_time_out {
-            return;
-        }
-
-        let layout = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints(vec![
-                Constraint::Fill(1),
-                Constraint::Length(33),
-                Constraint::Fill(1),
-            ])
-            .split(area);
-
-        let l = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Fill(3),
-                Constraint::Min(10),
-                Constraint::Fill(1),
-            ])
-            .split(layout[1]);
-        let p = Text::styled(
-            format!("PLAYER {player} LOST ON TIME\nHit <space> to continue "),
-            Style::default().bold().fg(Color::LightGreen),
-        );
-        Paragraph::new(p).render(l[1], buf);
     }
 }
 
@@ -214,16 +174,15 @@ impl Widget for Clock {
                 Constraint::Fill(1),
             ])
             .split(layout[1]);
-        let instructions = Line::from(vec![if matches!(self.turn, ClockTurn::NotStarted) {
-            " Hit <space> to start ".fg(Color::LightGreen).bold().into()
+
+        let bottom_text = if matches!(self.turn, ClockTurn::NotStarted) {
+            " Hit <space> to start ".to_string()
+        } else if self.is_time_out() {
+            " Time out. Hit <enter> to continue ".to_string()
         } else {
-            // Show time control when clock has started
-            self.time_ctrl
-                .to_string()
-                .fg(Color::LightGreen)
-                .bold()
-                .into()
-        }]);
+            self.time_ctrl.to_string()
+        };
+        let instructions = Line::from(bottom_text.fg(Color::LightGreen).bold());
         let block = Block::default().title_bottom(instructions.centered());
 
         let active_style = Style::default().bold().fg(Color::LightGreen); // TODO: make it a separate Style along with LightGray Style  below
