@@ -39,20 +39,18 @@ impl Time {
         for d in self.to_string().chars() {
             split_vec.push(font!(d).split('\n').collect());
         }
-        let mut line: Vec<&str> = Vec::new();
-        let letter_height = split_vec[0].len();
 
-        for i in 0..letter_height {
-            for n in &split_vec {
-                // skip empty str
-                if n[i].len() > 0 {
-                    line.push(n[i]);
-                    line.push(" ");
-                }
-            }
-            line.push("\n");
-        }
-        line.join("")
+        let letter_height = split_vec[0].len();
+        let lines: Vec<_> = (0..letter_height)
+            .map(|i| {
+                split_vec
+                    .iter()
+                    .map(move |s| s[i])
+                    .collect::<Vec<_>>()
+                    .join(" ")
+            })
+            .collect();
+        lines.join("\n")
     }
 }
 
