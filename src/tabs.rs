@@ -6,8 +6,8 @@ use ratatui::{
     layout::{Constraint, Layout, Rect},
     style::{Color, Style, Stylize},
     symbols,
-    text::Line,
-    widgets::{Block, Padding, Tabs, Widget},
+    text::{Line, Text},
+    widgets::{Block, Padding, Paragraph, Tabs, Widget},
 };
 use strum::{Display, EnumIter, FromRepr, IntoEnumIterator};
 
@@ -62,7 +62,8 @@ impl TimeCtrl {
 
 impl Widget for TimeCtrl {
     fn render(self, area: Rect, buf: &mut Buffer) {
-        use Constraint::{Fill, Length, Min};
+        use Constraint::{Fill, Length, Min, Percentage};
+
         let vertical = Layout::vertical([Length(1), Min(0)]);
         let [_, tabs_area] = vertical.areas(area);
         let horizontal = Layout::horizontal([Fill(1), Min(40), Fill(1)]);
@@ -77,6 +78,14 @@ impl Widget for TimeCtrl {
             .divider(" ")
             .render(tabs_area, buf);
         self.block().render(area, buf);
+
+        let p = Text::styled(
+            "'p'     Pause and resume clocks\nSpace   hits clocks\nCtrl-C  quit app",
+            Style::default().fg(Color::LightGreen).bold(),
+        );
+        let [_, bottom] = Layout::vertical([Percentage(70), Percentage(30)]).areas(*buf.area());
+        let [_, bottom, _] = Layout::horizontal([Fill(1), Length(32), Fill(1)]).areas(bottom);
+        Paragraph::new(p).left_aligned().render(bottom, buf);
     }
 }
 

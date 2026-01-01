@@ -73,8 +73,9 @@ impl Display for Time {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum ClockTurn {
+pub enum ClockState {
     NotStarted,
+    Pause,
     Player1,
     Player2,
 }
@@ -83,7 +84,8 @@ pub enum ClockTurn {
 pub struct Clock {
     pub player1: Time,
     pub player2: Time,
-    pub turn: ClockTurn,
+    pub state: ClockState,
+    resume_player: ClockState, // player turn before pause
     pub increment: Duration,
     pub time_ctrl: TimeCtrl,
 }
@@ -98,18 +100,19 @@ impl Clock {
         self.player1.0 = ctrl.to_duration().0;
         self.player2.0 = ctrl.to_duration().0;
         self.increment = ctrl.to_duration().1;
-        self.turn = ClockTurn::NotStarted;
+        self.state = ClockState::NotStarted;
     }
 
     pub fn hit(&mut self) {
-        match self.turn {
-            ClockTurn::NotStarted => self.turn = ClockTurn::Player1,
-            ClockTurn::Player1 => {
-                self.turn = ClockTurn::Player2;
+        match self.state {
+            ClockState::NotStarted => self.state = ClockState::Player1,
+            ClockState::Pause => (),
+            ClockState::Player1 => {
+                self.state = ClockState::Player2;
                 self.player1.0 += self.increment;
             }
-            ClockTurn::Player2 => {
-                self.turn = ClockTurn::Player1;
+            ClockState::Player2 => {
+                self.state = ClockState::Player1;
                 self.player2.0 += self.increment;
             }
         }
@@ -117,12 +120,12 @@ impl Clock {
 
     pub fn tick_timer(&mut self) {
         let millisec = Duration::from_millis(TIMER_TICK);
-        match self.turn {
-            ClockTurn::NotStarted => (),
-            ClockTurn::Player1 => {
+        match self.state {
+            ClockState::NotStarted | ClockState::Pause => (),
+            ClockState::Player1 => {
                 self.player1.0 = self.player1.0.saturating_sub(millisec);
             }
-            ClockTurn::Player2 => {
+            ClockState::Player2 => {
                 self.player2.0 = self.player2.0.saturating_sub(millisec);
             }
         }
@@ -135,6 +138,72 @@ impl Clock {
             false
         }
     }
+
+    pub fn pause(&mut self, resume_player: ClockState) {
+        match self.state {
+            ClockState::Pause => {
+                self.state = match self.resume_player {
+                    ClockState::Player1 | ClockState::Player2 => self.resume_player,
+                    _ => ClockState::Player1,
+                }
+            }
+            _ => {
+                self.resume_player = resume_player;
+                self.state = ClockState::Pause;
+            }
+        }
+    }
+
+    fn state_to_style(&self) -> [Style; 2] {
+        let active_style = Style::default().fg(Color::LightGreen);
+        let inactive_style = Style::default().fg(Color::from_u32(0x003f3f3f));
+        let burning_clock_style = Style::default().fg(Color::LightRed);
+        match self.state {
+            ClockState::Player1 => [
+                if Clock::burning(self.player1.0) {
+                    burning_clock_style
+                } else {
+                    active_style
+                },
+                inactive_style,
+            ],
+            ClockState::Player2 => [
+                inactive_style,
+                if Clock::burning(self.player2.0) {
+                    burning_clock_style
+                } else {
+                    active_style
+                },
+            ],
+            ClockState::NotStarted => [inactive_style, inactive_style],
+            ClockState::Pause => self.blink_style(),
+        }
+    }
+
+    fn blink_style(&self) -> [Style; 2] {
+        let active_style = Style::default().fg(Color::LightGreen);
+        let inactive_style = Style::default().fg(Color::from_u32(0x003f3f3f));
+        let burning_clock_style = Style::default().fg(Color::LightRed);
+        match self.resume_player {
+            ClockState::Player1 => [
+                if Clock::burning(self.player1.0) {
+                    burning_clock_style
+                } else {
+                    active_style
+                },
+                inactive_style,
+            ],
+            ClockState::Player2 => [
+                inactive_style,
+                if Clock::burning(self.player2.0) {
+                    burning_clock_style
+                } else {
+                    active_style
+                },
+            ],
+            _ => [inactive_style.slow_blink(), inactive_style.slow_blink()],
+        }
+    }
 }
 
 impl Default for Clock {
@@ -143,7 +212,8 @@ impl Default for Clock {
             increment: Duration::from_secs(1),
             player1: Time(Duration::from_secs(1)),
             player2: Time(Duration::from_secs(1)),
-            turn: ClockTurn::NotStarted,
+            state: ClockState::NotStarted,
+            resume_player: ClockState::Pause,
             time_ctrl: TimeCtrl::Tab1,
         }
     }
@@ -173,39 +243,19 @@ impl Widget for Clock {
             ])
             .split(layout[1]);
 
-        let bottom_text = if matches!(self.turn, ClockTurn::NotStarted) {
+        let bottom_text = if matches!(self.state, ClockState::NotStarted) {
             " Hit <space> to start ".to_string()
         } else if self.is_time_out() {
             " Time out. Hit <enter> to continue ".to_string()
+        } else if matches!(self.state, ClockState::Pause) {
+            " Pause. Hit 'p' to resume ".to_string()
         } else {
             self.time_ctrl.to_string()
         };
         let instructions = Line::from(bottom_text.fg(Color::LightGreen).bold());
         let block = Block::default().title_bottom(instructions.centered());
 
-        let active_style = Style::default().bold().fg(Color::LightGreen); // TODO: make it a separate Style along with LightGray Style  below
-        let inactive_style = Style::default().bold().fg(Color::from_u32(0x007a7a7a));
-        let burning_clock_style = Style::default().bold().fg(Color::LightRed);
-        let styles = match self.turn {
-            ClockTurn::NotStarted => vec![inactive_style, inactive_style],
-            ClockTurn::Player1 => vec![
-                if Clock::burning(self.player1.0) {
-                    burning_clock_style
-                } else {
-                    active_style
-                },
-                inactive_style,
-            ],
-            ClockTurn::Player2 => vec![
-                inactive_style,
-                if Clock::burning(self.player2.0) {
-                    burning_clock_style
-                } else {
-                    active_style
-                },
-            ],
-        };
-
+        let styles = self.state_to_style();
         let p1 = Text::styled(self.player1.with_font(), styles[0]);
         let p2 = Text::styled(self.player2.with_font(), styles[1]);
         Paragraph::new(p1).centered().render(l2[1], buf);

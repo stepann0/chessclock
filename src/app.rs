@@ -86,6 +86,7 @@ impl App {
                 KeyCode::Char(' ') => {
                     self.events.send(AppEvent::HitClock);
                 }
+                KeyCode::Char('p') => self.clock.pause(self.clock.state),
                 _ => {}
             },
             Screen::PickTimeCtrl => match key_event.code {
