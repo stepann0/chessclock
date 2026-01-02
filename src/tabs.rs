@@ -18,9 +18,9 @@ pub enum TimeCtrl {
     #[default]
     #[strum(to_string = "5s +0")]
     Tab0,
-    #[strum(to_string = "3 +2")]
-    Tab1,
     #[strum(to_string = "1 +0")]
+    Tab1,
+    #[strum(to_string = "3 +2")]
     Tab2,
     #[strum(to_string = "5 +3")]
     Tab3,
@@ -80,7 +80,7 @@ impl Widget for TimeCtrl {
         self.block().render(area, buf);
 
         let p = Text::styled(
-            "'p'     Pause and resume clocks\nSpace   hits clocks\nCtrl-C  quit app",
+            "'p'     pause and resume clock\nSpace   hit clock\nCtrl-C  quit app",
             Style::default().fg(Color::LightGreen).bold(),
         );
         let [_, bottom] = Layout::vertical([Percentage(70), Percentage(30)]).areas(*buf.area());
@@ -91,7 +91,7 @@ impl Widget for TimeCtrl {
 
 impl TimeCtrl {
     pub fn title(self) -> Line<'static> {
-        format!(" {self} ").fg(Color::White).into()
+        format!(" {self} ").fg(Color::from_u32(0x007f00)).into()
     }
 
     /// A block surrounding the tab's content
@@ -100,6 +100,6 @@ impl TimeCtrl {
             .border_set(symbols::border::ROUNDED)
             .padding(Padding::horizontal(1))
             .border_style(Color::LightGreen)
-            .title(Line::from(" Choose time control ").centered())
+            .title(Line::from(" Select time control ").centered())
     }
 }

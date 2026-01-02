@@ -154,13 +154,18 @@ impl Clock {
         }
     }
 
-    fn state_to_style(&self) -> [Style; 2] {
+    fn state_to_style_pure(
+        state: ClockState,
+        resume: ClockState,
+        time1: Duration,
+        time2: Duration,
+    ) -> [Style; 2] {
         let active_style = Style::default().fg(Color::LightGreen);
         let inactive_style = Style::default().fg(Color::from_u32(0x003f3f3f));
         let burning_clock_style = Style::default().fg(Color::LightRed);
-        match self.state {
+        match state {
             ClockState::Player1 => [
-                if Clock::burning(self.player1.0) {
+                if Clock::burning(time1) {
                     burning_clock_style
                 } else {
                     active_style
@@ -169,39 +174,14 @@ impl Clock {
             ],
             ClockState::Player2 => [
                 inactive_style,
-                if Clock::burning(self.player2.0) {
+                if Clock::burning(time2) {
                     burning_clock_style
                 } else {
                     active_style
                 },
             ],
             ClockState::NotStarted => [inactive_style, inactive_style],
-            ClockState::Pause => self.blink_style(),
-        }
-    }
-
-    fn blink_style(&self) -> [Style; 2] {
-        let active_style = Style::default().fg(Color::LightGreen);
-        let inactive_style = Style::default().fg(Color::from_u32(0x003f3f3f));
-        let burning_clock_style = Style::default().fg(Color::LightRed);
-        match self.resume_player {
-            ClockState::Player1 => [
-                if Clock::burning(self.player1.0) {
-                    burning_clock_style
-                } else {
-                    active_style
-                },
-                inactive_style,
-            ],
-            ClockState::Player2 => [
-                inactive_style,
-                if Clock::burning(self.player2.0) {
-                    burning_clock_style
-                } else {
-                    active_style
-                },
-            ],
-            _ => [inactive_style.slow_blink(), inactive_style.slow_blink()],
+            ClockState::Pause => Clock::state_to_style_pure(resume, resume, time1, time2),
         }
     }
 }
@@ -255,7 +235,12 @@ impl Widget for Clock {
         let instructions = Line::from(bottom_text.fg(Color::LightGreen).bold());
         let block = Block::default().title_bottom(instructions.centered());
 
-        let styles = self.state_to_style();
+        let styles = Clock::state_to_style_pure(
+            self.state,
+            self.resume_player,
+            self.player1.0,
+            self.player2.0,
+        );
         let p1 = Text::styled(self.player1.with_font(), styles[0]);
         let p2 = Text::styled(self.player2.with_font(), styles[1]);
         Paragraph::new(p1).centered().render(l2[1], buf);
