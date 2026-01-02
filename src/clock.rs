@@ -2,7 +2,10 @@ use std::{fmt::Display, time::Duration};
 
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{
+        Constraint::{Fill, Length, Min, Percentage},
+        Direction, Layout, Rect,
+    },
     style::{Color, Style, Stylize},
     text::{Line, Text},
     widgets::{Block, Paragraph, Widget},
@@ -73,11 +76,22 @@ impl Display for Time {
 }
 
 #[derive(Debug, Clone, Copy)]
+pub enum Player {
+    Player1,
+    Player2,
+}
+
+impl Default for Player {
+    fn default() -> Self {
+        Player::Player1
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
 pub enum ClockState {
     NotStarted,
     Pause,
-    Player1,
-    Player2,
+    Player(Player),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -85,7 +99,8 @@ pub struct Clock {
     pub player1: Time,
     pub player2: Time,
     pub state: ClockState,
-    resume_player: ClockState, // player turn before pause
+    resume_player: Player, // player turn before pause
+    first_to_move: Player,
     pub increment: Duration,
     pub time_ctrl: TimeCtrl,
 }
@@ -103,18 +118,27 @@ impl Clock {
         self.state = ClockState::NotStarted;
     }
 
+    pub fn curr_player(&self) -> Option<Player> {
+        match self.state {
+            ClockState::Player(p) => Some(p),
+            _ => None,
+        }
+    }
+
     pub fn hit(&mut self) {
         match self.state {
-            ClockState::NotStarted => self.state = ClockState::Player1,
+            ClockState::NotStarted => self.state = ClockState::Player(self.first_to_move),
             ClockState::Pause => (),
-            ClockState::Player1 => {
-                self.state = ClockState::Player2;
-                self.player1.0 += self.increment;
-            }
-            ClockState::Player2 => {
-                self.state = ClockState::Player1;
-                self.player2.0 += self.increment;
-            }
+            ClockState::Player(p) => match p {
+                Player::Player1 => {
+                    self.state = ClockState::Player(Player::Player2);
+                    self.player1.0 += self.increment;
+                }
+                Player::Player2 => {
+                    self.state = ClockState::Player(Player::Player1);
+                    self.player2.0 += self.increment;
+                }
+            },
         }
     }
 
@@ -122,12 +146,14 @@ impl Clock {
         let millisec = Duration::from_millis(TIMER_TICK);
         match self.state {
             ClockState::NotStarted | ClockState::Pause => (),
-            ClockState::Player1 => {
-                self.player1.0 = self.player1.0.saturating_sub(millisec);
-            }
-            ClockState::Player2 => {
-                self.player2.0 = self.player2.0.saturating_sub(millisec);
-            }
+            ClockState::Player(p) => match p {
+                Player::Player1 => {
+                    self.player1.0 = self.player1.0.saturating_sub(millisec);
+                }
+                Player::Player2 => {
+                    self.player2.0 = self.player2.0.saturating_sub(millisec);
+                }
+            },
         }
     }
 
@@ -139,14 +165,9 @@ impl Clock {
         }
     }
 
-    pub fn pause(&mut self, resume_player: ClockState) {
+    pub fn pause(&mut self, resume_player: Player) {
         match self.state {
-            ClockState::Pause => {
-                self.state = match self.resume_player {
-                    ClockState::Player1 | ClockState::Player2 => self.resume_player,
-                    _ => ClockState::Player1,
-                }
-            }
+            ClockState::Pause => self.state = ClockState::Player(self.resume_player),
             _ => {
                 self.resume_player = resume_player;
                 self.state = ClockState::Pause;
@@ -156,7 +177,7 @@ impl Clock {
 
     fn state_to_style_pure(
         state: ClockState,
-        resume: ClockState,
+        resume: Player,
         time1: Duration,
         time2: Duration,
     ) -> [Style; 2] {
@@ -164,24 +185,35 @@ impl Clock {
         let inactive_style = Style::default().fg(Color::from_u32(0x003f3f3f));
         let burning_clock_style = Style::default().fg(Color::LightRed);
         match state {
-            ClockState::Player1 => [
-                if Clock::burning(time1) {
-                    burning_clock_style
-                } else {
-                    active_style
-                },
-                inactive_style,
-            ],
-            ClockState::Player2 => [
-                inactive_style,
-                if Clock::burning(time2) {
-                    burning_clock_style
-                } else {
-                    active_style
-                },
-            ],
+            ClockState::Player(p) => match p {
+                Player::Player1 => [
+                    if Clock::burning(time1) {
+                        burning_clock_style
+                    } else {
+                        active_style
+                    },
+                    inactive_style,
+                ],
+                Player::Player2 => [
+                    inactive_style,
+                    if Clock::burning(time2) {
+                        burning_clock_style
+                    } else {
+                        active_style
+                    },
+                ],
+            },
             ClockState::NotStarted => [inactive_style, inactive_style],
-            ClockState::Pause => Clock::state_to_style_pure(resume, resume, time1, time2),
+            ClockState::Pause => {
+                Clock::state_to_style_pure(ClockState::Player(resume), resume, time1, time2)
+            }
+        }
+    }
+
+    pub fn flip_first_to_move(&mut self) {
+        self.first_to_move = match self.first_to_move {
+            Player::Player1 => Player::Player2,
+            Player::Player2 => Player::Player1,
         }
     }
 }
@@ -193,8 +225,9 @@ impl Default for Clock {
             player1: Time(Duration::from_secs(1)),
             player2: Time(Duration::from_secs(1)),
             state: ClockState::NotStarted,
-            resume_player: ClockState::Pause,
+            resume_player: Player::Player1,
             time_ctrl: TimeCtrl::Tab1,
+            first_to_move: Player::default(),
         }
     }
 }
@@ -203,24 +236,16 @@ impl Widget for Clock {
     fn render(self, area: Rect, buf: &mut Buffer) {
         let layout = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+            .constraints(vec![Percentage(50), Percentage(50)])
             .split(area);
 
         let l2 = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Fill(3),
-                Constraint::Min(10),
-                Constraint::Fill(1),
-            ])
+            .constraints(vec![Fill(3), Min(10), Fill(1)])
             .split(layout[0]);
         let l3 = Layout::default()
             .direction(Direction::Vertical)
-            .constraints(vec![
-                Constraint::Fill(3),
-                Constraint::Min(10),
-                Constraint::Fill(1),
-            ])
+            .constraints(vec![Fill(3), Min(10), Fill(1)])
             .split(layout[1]);
 
         let bottom_text = if matches!(self.state, ClockState::NotStarted) {
@@ -234,6 +259,22 @@ impl Widget for Clock {
         };
         let instructions = Line::from(bottom_text.fg(Color::LightGreen).bold());
         let block = Block::default().title_bottom(instructions.centered());
+
+        if matches!(self.state, ClockState::NotStarted) {
+            let [left, right] =
+                Layout::horizontal([Percentage(50), Percentage(50)]).areas(*buf.area());
+            let [_, left] = Layout::vertical([Fill(1), Length(1)]).areas(left);
+            let [_, right] = Layout::vertical([Fill(1), Length(1)]).areas(right);
+            let mark = Line::from(" first to move ".fg(Color::Yellow).bold());
+            let block = Block::default().title_bottom(mark.centered());
+            block.render(
+                match self.first_to_move {
+                    Player::Player1 => left,
+                    Player::Player2 => right,
+                },
+                buf,
+            );
+        }
 
         let styles = Clock::state_to_style_pure(
             self.state,

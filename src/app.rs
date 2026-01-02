@@ -86,7 +86,12 @@ impl App {
                 KeyCode::Char(' ') => {
                     self.events.send(AppEvent::HitClock);
                 }
-                KeyCode::Char('p') => self.clock.pause(self.clock.state),
+                KeyCode::Char('p') => self
+                    .clock
+                    .pause(self.clock.curr_player().unwrap_or_default()),
+                KeyCode::Char('r' | 'R') => {
+                    self.clock.flip_first_to_move();
+                }
                 _ => {}
             },
             Screen::SelectTimeCtrl => match key_event.code {
@@ -98,7 +103,7 @@ impl App {
                 _ => self.time_ctrl_selecter.handle_key_events(key_event),
             },
             Screen::TimeOut => match key_event.code {
-                KeyCode::Char('R') | KeyCode::Char('r') | KeyCode::Enter => {
+                KeyCode::Char('R' | 'r') | KeyCode::Enter => {
                     self.screen = Screen::SelectTimeCtrl;
                 }
                 KeyCode::Char('q') => self.events.send(AppEvent::Quit),

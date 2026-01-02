@@ -80,7 +80,7 @@ impl Widget for TimeCtrl {
         self.block().render(area, buf);
 
         let p = Text::styled(
-            "'p'     pause and resume clock\nSpace   hit clock\nCtrl-C  quit app",
+            include_str!("help"),
             Style::default().fg(Color::LightGreen).bold(),
         );
         let [_, bottom] = Layout::vertical([Percentage(70), Percentage(30)]).areas(*buf.area());
