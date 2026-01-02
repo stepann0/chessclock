@@ -12,7 +12,7 @@ use std::io;
 #[derive(Debug, PartialEq)]
 pub enum Screen {
     Clocks,
-    PickTimeCtrl,
+    SelectTimeCtrl,
     TimeOut,
 }
 
@@ -25,7 +25,7 @@ pub struct App {
     // Multi-screen logic goes here
     pub screen: Screen,
     pub clock: Clock,
-    pub time_ctrl_picker: TimeCtrl,
+    pub time_ctrl_selecter: TimeCtrl,
 }
 
 impl Default for App {
@@ -34,8 +34,8 @@ impl Default for App {
             clock: Clock::default(),
             running: true,
             events: EventHandler::new(),
-            screen: Screen::PickTimeCtrl,
-            time_ctrl_picker: TimeCtrl::default(),
+            screen: Screen::SelectTimeCtrl,
+            time_ctrl_selecter: TimeCtrl::default(),
         }
     }
 }
@@ -89,17 +89,17 @@ impl App {
                 KeyCode::Char('p') => self.clock.pause(self.clock.state),
                 _ => {}
             },
-            Screen::PickTimeCtrl => match key_event.code {
+            Screen::SelectTimeCtrl => match key_event.code {
                 KeyCode::Char('q') => self.events.send(AppEvent::Quit),
                 KeyCode::Char(' ') | KeyCode::Enter => {
-                    self.clock.set(self.time_ctrl_picker);
+                    self.clock.set(self.time_ctrl_selecter);
                     self.screen = Screen::Clocks;
                 }
-                _ => self.time_ctrl_picker.handle_key_events(key_event),
+                _ => self.time_ctrl_selecter.handle_key_events(key_event),
             },
             Screen::TimeOut => match key_event.code {
                 KeyCode::Char('R') | KeyCode::Char('r') | KeyCode::Enter => {
-                    self.screen = Screen::PickTimeCtrl;
+                    self.screen = Screen::SelectTimeCtrl;
                 }
                 KeyCode::Char('q') => self.events.send(AppEvent::Quit),
                 _ => {}
@@ -114,7 +114,7 @@ impl App {
     pub fn ui(&mut self, frame: &mut Frame) {
         match self.screen {
             Screen::Clocks => self.render_clocks(frame),
-            Screen::PickTimeCtrl => self.render_pick_time_ctrl(frame),
+            Screen::SelectTimeCtrl => self.render_select_time_ctrl(frame),
             Screen::TimeOut => self.render_time_out(frame),
         }
     }
@@ -123,9 +123,9 @@ impl App {
         self.clock.render(frame.area(), frame.buffer_mut());
     }
 
-    pub fn render_pick_time_ctrl(&mut self, frame: &mut Frame) {
+    pub fn render_select_time_ctrl(&mut self, frame: &mut Frame) {
         let center = self.popup_area(frame.area(), 40, 3);
-        self.time_ctrl_picker.render(center, frame.buffer_mut());
+        self.time_ctrl_selecter.render(center, frame.buffer_mut());
     }
 
     pub fn render_time_out(&mut self, frame: &mut Frame) {

@@ -52,8 +52,8 @@ impl TimeCtrl {
     pub fn to_duration(&self) -> CtrlOption {
         match self {
             TimeCtrl::Tab0 => (Duration::from_secs(5), Duration::from_secs(0)),
-            TimeCtrl::Tab1 => (Duration::from_secs(180), Duration::from_secs(2)),
-            TimeCtrl::Tab2 => (Duration::from_secs(60), Duration::from_secs(0)),
+            TimeCtrl::Tab1 => (Duration::from_secs(60), Duration::from_secs(0)),
+            TimeCtrl::Tab2 => (Duration::from_secs(180), Duration::from_secs(2)),
             TimeCtrl::Tab3 => (Duration::from_secs(300), Duration::from_secs(3)),
             TimeCtrl::Tab4 => (Duration::from_secs(600), Duration::from_secs(0)),
         }
