@@ -265,9 +265,8 @@ impl Widget for Clock {
                 Layout::horizontal([Percentage(50), Percentage(50)]).areas(*buf.area());
             let [_, left] = Layout::vertical([Fill(1), Length(1)]).areas(left);
             let [_, right] = Layout::vertical([Fill(1), Length(1)]).areas(right);
-            let mark = Line::from(" first to move ".fg(Color::Yellow).bold());
-            let block = Block::default().title_bottom(mark.centered());
-            block.render(
+            let mark = Line::from(" first to move ".fg(Color::Yellow).bold()).centered();
+            mark.render(
                 match self.first_to_move {
                     Player::Player1 => left,
                     Player::Player2 => right,

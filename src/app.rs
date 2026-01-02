@@ -7,7 +7,6 @@ use ratatui::{
     layout::{Constraint, Flex, Layout, Rect},
     widgets::Widget,
 };
-use std::io;
 
 #[derive(Debug, PartialEq)]
 pub enum Screen {
@@ -73,7 +72,7 @@ impl App {
         Ok(())
     }
 
-    pub fn handle_key_events(&mut self, key_event: KeyEvent) -> io::Result<()> {
+    pub fn handle_key_events(&mut self, key_event: KeyEvent) -> anyhow::Result<()> {
         match key_event.code {
             KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                 self.events.send(AppEvent::Quit)
