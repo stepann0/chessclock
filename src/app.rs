@@ -18,13 +18,13 @@ pub enum Screen {
 #[derive(Debug)]
 pub struct App {
     // Event handler.
-    pub events: EventHandler,
-    pub running: bool,
+    events: EventHandler,
+    running: bool,
 
     // Multi-screen logic goes here
-    pub screen: Screen,
-    pub clock: Clock,
-    pub time_ctrl_selecter: TimeCtrl,
+    screen: Screen,
+    clock: Clock,
+    time_ctrl_selecter: TimeCtrl,
 }
 
 impl Default for App {

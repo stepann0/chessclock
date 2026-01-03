@@ -75,16 +75,11 @@ impl Display for Time {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub enum Player {
+    #[default]
     Player1,
     Player2,
-}
-
-impl Default for Player {
-    fn default() -> Self {
-        Player::Player1
-    }
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -96,13 +91,13 @@ pub enum ClockState {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Clock {
-    pub player1: Time,
-    pub player2: Time,
-    pub state: ClockState,
+    player1: Time,
+    player2: Time,
+    state: ClockState,
     resume_player: Player, // player turn before pause
     first_to_move: Player,
-    pub increment: Duration,
-    pub time_ctrl: TimeCtrl,
+    increment: Duration,
+    time_ctrl: TimeCtrl,
 }
 
 impl Clock {
@@ -168,10 +163,11 @@ impl Clock {
     pub fn pause(&mut self, resume_player: Player) {
         match self.state {
             ClockState::Pause => self.state = ClockState::Player(self.resume_player),
-            _ => {
+            ClockState::Player(_) => {
                 self.resume_player = resume_player;
                 self.state = ClockState::Pause;
             }
+            ClockState::NotStarted => (),
         }
     }
 
@@ -263,9 +259,9 @@ impl Widget for Clock {
         if matches!(self.state, ClockState::NotStarted) {
             let [left, right] =
                 Layout::horizontal([Percentage(50), Percentage(50)]).areas(*buf.area());
-            let [_, left] = Layout::vertical([Fill(1), Length(1)]).areas(left);
-            let [_, right] = Layout::vertical([Fill(1), Length(1)]).areas(right);
-            let mark = Line::from(" first to move ".fg(Color::Yellow).bold()).centered();
+            let [_, left, _] = Layout::vertical([Fill(1), Length(1), Percentage(30)]).areas(left);
+            let [_, right, _] = Layout::vertical([Fill(1), Length(1), Percentage(30)]).areas(right);
+            let mark = Line::from(" first to move ".fg(Color::Reset).bold()).centered();
             mark.render(
                 match self.first_to_move {
                     Player::Player1 => left,

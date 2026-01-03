@@ -83,9 +83,9 @@ impl Widget for TimeCtrl {
             include_str!("help"),
             Style::default().fg(Color::LightGreen).bold(),
         );
-        let [_, bottom] = Layout::vertical([Percentage(70), Percentage(30)]).areas(*buf.area());
-        let [_, bottom, _] = Layout::horizontal([Fill(1), Length(32), Fill(1)]).areas(bottom);
-        Paragraph::new(p).left_aligned().render(bottom, buf);
+        let [_, help] = Layout::vertical([Percentage(60), Percentage(40)]).areas(*buf.area());
+        let [_, help, _] = Layout::horizontal([Fill(1), Length(32), Fill(1)]).areas(help);
+        Paragraph::new(p).left_aligned().render(help, buf);
     }
 }
 
